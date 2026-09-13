@@ -1,0 +1,39 @@
+#include "button_manager.h"
+
+#include "config.h"
+
+namespace {
+constexpr uint32_t DEBOUNCE_MS = 40;
+}
+
+void ButtonManager::begin() {
+  pinMode(Config::BUTTON_PIN, INPUT_PULLUP);
+  const bool pressed = digitalRead(Config::BUTTON_PIN) == LOW;
+  stablePressed_ = pressed;
+  lastReading_ = pressed;
+  pressedEvent_ = false;
+  lastChangeMs_ = millis();
+}
+
+void ButtonManager::update(uint32_t nowMs) {
+  const bool reading = digitalRead(Config::BUTTON_PIN) == LOW;
+  if (reading != lastReading_) {
+    lastReading_ = reading;
+    lastChangeMs_ = nowMs;
+  }
+
+  if ((nowMs - lastChangeMs_) >= DEBOUNCE_MS && reading != stablePressed_) {
+    stablePressed_ = reading;
+    if (stablePressed_) {
+      pressedEvent_ = true;
+    }
+  }
+}
+
+bool ButtonManager::wasPressed() {
+  if (!pressedEvent_) {
+    return false;
+  }
+  pressedEvent_ = false;
+  return true;
+}
