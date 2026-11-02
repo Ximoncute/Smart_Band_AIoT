@@ -16,8 +16,11 @@ constexpr uint8_t GPS_TX = 1;
 constexpr uint8_t GPS_RX = 2;
 constexpr uint32_t GPS_BAUD = 9600;
 
-constexpr const char* WIFI_SSID = "HieuCute";
-constexpr const char* WIFI_PASSWORD = "hieucute";
+// Wi-Fi credentials are provisioned over BLE and stored in ESP32 NVS.
+constexpr const char* DEVICE_ID = "smartband-001";
+constexpr const char* BLE_DEVICE_NAME = "Smartband-001";
+constexpr const char* BLE_SERVICE_UUID = "7d8f0001-8d5b-4d2f-9b2a-8b0a0f8a1001";
+constexpr const char* BLE_WIFI_CHAR_UUID = "7d8f0002-8d5b-4d2f-9b2a-8b0a0f8a1001";
 
 constexpr uint32_t SERIAL_BAUD = 115200;
 
@@ -36,10 +39,11 @@ constexpr uint32_t POSSIBLE_IMPACT_SCREEN_MS = 500;
 constexpr uint32_t POST_IMPACT_ANALYSIS_MS = 2500;
 constexpr uint32_t RECOVERY_SCREEN_MS = 1800;
 constexpr uint32_t DISPLAY_REFRESH_MS = 250;
-constexpr uint32_t OLED_PAGE_MS = 3000;
-constexpr uint32_t SERIAL_STATUS_MS = 2000;
+constexpr uint32_t OLED_PAGE_MS = 6000;
+constexpr uint32_t SERIAL_STATUS_MS = 3000;
 constexpr uint32_t WEATHER_REFRESH_MS = 900000;
 constexpr uint32_t WIFI_RETRY_MS = 30000;
+constexpr uint32_t TELEMETRY_INTERVAL_MS = 2000;
 
 constexpr uint32_t CONFIRMATION_TIMEOUT_MS = 15000;
 

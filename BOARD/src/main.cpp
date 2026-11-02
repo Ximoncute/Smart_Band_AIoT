@@ -1,5 +1,12 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <NimBLEDevice.h>
+#include <Preferences.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
 
 #include "ai_model.h"
 #include "button_manager.h"
@@ -17,6 +24,7 @@ enum class SystemState : uint8_t {
   Analyzing,
   UserConfirmation,
   Emergency,
+  Sos,
   Recovery
 };
 
@@ -47,11 +55,66 @@ uint32_t handledSampleSequence = 0;
 uint32_t datasetStopMs = 0;
 uint32_t lastDisplayMs = 0;
 uint32_t lastSerialStatusMs = 0;
+uint32_t lastTelemetryMs = 0;
 uint8_t lastPage = 255;
 uint8_t lastCountdown = 255;
 volatile bool datasetMode = false;
+volatile bool wifiProvisioned = false;
+uint32_t alertEventMs = 0;
 char datasetLabel[Config::DATASET_LABEL_MAX_LEN + 1] = "normal";
 String serialBuffer;
+
+class WifiProvisionCallbacks : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic* characteristic, NimBLEConnInfo&) override {
+    JsonDocument json;
+    const std::string raw = characteristic->getValue();
+    if (deserializeJson(json, raw.c_str()) != DeserializationError::Ok) return;
+    if (json["screen"].is<JsonObject>()) {
+      Preferences preferences;
+      if (!preferences.begin("smartband", false)) return;
+      preferences.putString("screen1", (const char*) (json["screen"]["line1"] | ""));
+      preferences.putString("screen2", (const char*) (json["screen"]["line2"] | ""));
+      preferences.putString("screen3", (const char*) (json["screen"]["line3"] | ""));
+      preferences.end();
+      wifiProvisioned = true;
+      return;
+    }
+    const char* ssid = json["ssid"] | "";
+    const char* password = json["password"] | "";
+    const char* backendUrl = json["backend_url"] | "";
+    if (!ssid[0]) return;
+    Serial.printf("[BLE] Received WiFi provisioning, SSID length=%u\n", strlen(ssid));
+    Preferences preferences;
+    preferences.begin("smartband", false);
+    preferences.putString("ssid", ssid);
+    preferences.putString("password", password);
+    if (backendUrl[0]) preferences.putString("backend", backendUrl);
+    preferences.end();
+    Serial.println("[BLE] WiFi credentials written to NVS");
+    Serial.printf("[BLE] WiFi credentials saved for SSID: %s\n", ssid);
+    // Do not delay or restart from the NimBLE callback task. Doing so can
+    // starve IDLE1 and trigger the ESP32 interrupt watchdog. The main loop
+    // performs the restart after the callback has returned.
+    wifiProvisioned = true;
+  }
+};
+
+void beginBleProvisioning() {
+  NimBLEDevice::init(Config::BLE_DEVICE_NAME);
+  NimBLEServer* server = NimBLEDevice::createServer();
+  NimBLEService* service = server->createService(Config::BLE_SERVICE_UUID);
+  NimBLECharacteristic* wifiCharacteristic = service->createCharacteristic(
+      Config::BLE_WIFI_CHAR_UUID,
+      NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::NOTIFY);
+  wifiCharacteristic->setCallbacks(new WifiProvisionCallbacks());
+  service->start();
+  server->start();
+  NimBLEAdvertising* advertising = NimBLEDevice::getAdvertising();
+  advertising->setName(Config::BLE_DEVICE_NAME);
+  advertising->addServiceUUID(Config::BLE_SERVICE_UUID);
+  advertising->start();
+  Serial.println("[BLE] Provisioning ready: Smartband-001");
+}
 
 void printCsv(const MotionSample& sample) {
   Serial.printf("%lu,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%s\n", sample.timestampMs, sample.ax, sample.ay,
@@ -124,9 +187,11 @@ void enterState(SystemState next) {
     buzzerManager.setMode(BuzzerMode::UserConfirmation);
     displayManager.showCrashDetected(15);
   }
-  if (state == SystemState::Emergency) {
+  if (state == SystemState::Emergency || state == SystemState::Sos) {
+    alertEventMs = millis();
     buzzerManager.setMode(BuzzerMode::Emergency);
-    displayManager.showEmergency();
+    if (state == SystemState::Sos) displayManager.showSos();
+    else displayManager.showEmergency();
   }
   if (state == SystemState::Recovery) displayManager.showRecovery();
 }
@@ -154,6 +219,9 @@ void processCommand(String command) {
   }
   if (command == "test crash") enterState(SystemState::UserConfirmation);
   if (command == "test emergency") enterState(SystemState::Emergency);
+  if (command == "test sos") {
+    enterState(SystemState::Sos);
+  }
   if (command == "test normal") enterState(SystemState::Normal);
 }
 
@@ -176,6 +244,7 @@ const char* stateName() {
     case SystemState::Analyzing: return "ANALYZING";
     case SystemState::UserConfirmation: return "ARE_YOU_OK";
     case SystemState::Emergency: return "EMERGENCY";
+    case SystemState::Sos: return "SOS";
     case SystemState::Recovery: return "RECOVERY";
   }
   return "UNKNOWN";
@@ -202,6 +271,73 @@ const char* weatherCondition(int code) {
   return "STORM";
 }
 
+void postTelemetry(uint32_t now, const SharedData& data) {
+  if (now - lastTelemetryMs < Config::TELEMETRY_INTERVAL_MS || WiFi.status() != WL_CONNECTED) return;
+  lastTelemetryMs = now;
+  JsonDocument json;
+  json["device_id"] = Config::DEVICE_ID;
+  json["timestamp_ms"] = now;
+  json["state"] = stateName();
+  json["alert_type"] = state == SystemState::Sos ? "SOS" : state == SystemState::Emergency ? "FALL" : "";
+  json["alert_event_ms"] = alertEventMs;
+  json["ai"] = motionClassName(data.prediction.predictedClass);
+  json["ai_normal"] = data.prediction.normal;
+  json["ai_impact"] = data.prediction.impact;
+  json["ai_crash"] = data.prediction.crash;
+  json["gps"]["valid"] = data.gps.locationValid;
+  json["gps"]["lat"] = data.gps.latitude;
+  json["gps"]["lon"] = data.gps.longitude;
+  json["gps"]["speed_kmh"] = data.gps.speedKmh;
+  json["gps"]["satellites"] = data.gps.satellites;
+  json["gps"]["nmea"] = data.gps.charsProcessed;
+  json["gps"]["hdop"] = data.gps.hdop;
+  json["gps"]["altitude_m"] = data.gps.altitudeM;
+  json["wifi_rssi"] = WiFi.RSSI();
+  json["wifi_ssid"] = WiFi.SSID();
+  // The app mirrors this payload; it is generated from the same SharedData
+  // used by DisplayManager, so the app and the physical OLED stay consistent.
+  json["display"]["state"] = stateName();
+  json["display"]["ai"] = motionClassName(data.prediction.predictedClass);
+  json["display"]["gps_valid"] = data.gps.locationValid;
+  json["display"]["lat"] = data.gps.latitude;
+  json["display"]["lon"] = data.gps.longitude;
+  json["display"]["satellites"] = data.gps.satellites;
+  json["display"]["weather_valid"] = data.weather.valid;
+  json["display"]["temperature_c"] = data.weather.temperatureC;
+  json["display"]["weather_code"] = data.weather.weatherCode;
+  json["display"]["rain_probability"] = data.weather.rainProbability;
+  json["display"]["page"] = lastPage;
+  Preferences screenPreferences;
+  screenPreferences.begin("smartband", true);
+  json["display"]["custom_line1"] = screenPreferences.getString("screen1", "");
+  json["display"]["custom_line2"] = screenPreferences.getString("screen2", "");
+  json["display"]["custom_line3"] = screenPreferences.getString("screen3", "");
+  screenPreferences.end();
+  tm displayTime{};
+  if (getLocalTime(&displayTime, 0)) {
+    char timeText[20];
+    strftime(timeText, sizeof(timeText), "%H:%M:%S", &displayTime);
+    json["display"]["time"] = timeText;
+    strftime(timeText, sizeof(timeText), "%d/%m/%Y", &displayTime);
+    json["display"]["date"] = timeText;
+  }
+  String body;
+  serializeJson(json, body);
+  HTTPClient http;
+  WiFiClient client;
+  Preferences preferences;
+  preferences.begin("smartband", true);
+  const String backendUrl = preferences.isKey("backend") ? preferences.getString("backend", "") : "";
+  preferences.end();
+  if (!backendUrl.length()) return;
+  if (http.begin(client, backendUrl + "/api/v1/telemetry")) {
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(1500);
+    http.POST(body);
+    http.end();
+  }
+}
+
 void printFullStatus(uint32_t now, const SharedData& data) {
   if (datasetMode) return;
   if (now - lastSerialStatusMs < Config::SERIAL_STATUS_MS) return;
@@ -223,7 +359,7 @@ void printFullStatus(uint32_t now, const SharedData& data) {
   Serial.printf("IMPACT   : %.3f\n", data.prediction.impact);
   Serial.printf("CRASH    : %.3f\n", data.prediction.crash);
   Serial.printf("WIFI     : %s\n", wifiConnected ? "CONNECTED" : "DISCONNECTED");
-  Serial.printf("SSID     : %s\n", Config::WIFI_SSID);
+  Serial.printf("SSID     : %s\n", WiFi.SSID().c_str());
   Serial.printf("RSSI     : %d dBm\n", wifiConnected ? WiFi.RSSI() : 0);
   Serial.print("IP       : ");
   Serial.println(wifiConnected ? WiFi.localIP().toString() : "0.0.0.0");
@@ -278,6 +414,7 @@ void updateStateMachine(uint32_t now, const MotionSample& sample, const AiPredic
       }
       break;
     case SystemState::Emergency:
+    case SystemState::Sos:
       if (buttonManager.wasPressed()) {
         crashDetector.reset();
         enterState(SystemState::Recovery);
@@ -290,7 +427,13 @@ void updateStateMachine(uint32_t now, const MotionSample& sample, const AiPredic
 }
 
 void showNormalPages(uint32_t now, const SharedData& data) {
-  const uint8_t page = (now / Config::OLED_PAGE_MS) % 3;
+  Preferences preferences;
+  preferences.begin("smartband", true);
+  const String custom1 = preferences.getString("screen1", "");
+  const String custom2 = preferences.getString("screen2", "");
+  const String custom3 = preferences.getString("screen3", "");
+  preferences.end();
+  const uint8_t page = (now / Config::OLED_PAGE_MS) % (custom1.length() ? 4 : 3);
   if (page == lastPage && now - lastDisplayMs < Config::DISPLAY_REFRESH_MS) return;
   lastPage = page;
   lastDisplayMs = now;
@@ -300,8 +443,10 @@ void showNormalPages(uint32_t now, const SharedData& data) {
     displayManager.showTimeWeather(timeInfo, valid, data.weather);
   } else if (page == 1) {
     displayManager.showAiLocation(data.prediction, data.gps);
-  } else {
+  } else if (page == 2) {
     displayManager.showGpsStatus(data.gps);
+  } else {
+    displayManager.showCustom(custom1.c_str(), custom2.c_str(), custom3.c_str());
   }
 }
 
@@ -346,10 +491,11 @@ void setup() {
   Serial.println("[BOOT] GPS");
   gpsManager.begin();
   Serial.println("[BOOT] WIFI");
+  beginBleProvisioning();
   weatherManager.begin();
   dataMutex = xSemaphoreCreateMutex();
   displayManager.showSystemReady();
-  xTaskCreatePinnedToCore(imuAiTask, "IMU_AI", 6144, nullptr, 3, nullptr, 1);
+  xTaskCreatePinnedToCore(imuAiTask, "IMU_AI", 6144, nullptr, 2, nullptr, 1);
   xTaskCreatePinnedToCore(gpsTask, "GPS", 4096, nullptr, 2, nullptr, 0);
   xTaskCreatePinnedToCore(weatherTask, "WEATHER", 8192, nullptr, 1, nullptr, 0);
   Serial.println("[BOOT] TASKS READY");
@@ -358,7 +504,16 @@ void setup() {
 void loop() {
   const uint32_t now = millis();
   readSerial();
+  if (wifiProvisioned) {
+    Serial.println("[BLE] Provisioning complete; restarting safely");
+    delay(100);
+    ESP.restart();
+  }
   buttonManager.update(now);
+  if (buttonManager.wasHeld()) {
+    enterState(SystemState::Sos);
+    Serial.println("[SOS] Long press emergency");
+  }
   buzzerManager.update(now);
   if (datasetMode && static_cast<int32_t>(now - datasetStopMs) >= 0) datasetMode = false;
 
@@ -369,10 +524,11 @@ void loop() {
   if (data.sampleSequence != handledSampleSequence) {
     handledSampleSequence = data.sampleSequence;
     updateStateMachine(now, data.sample, data.prediction);
-  } else if (state == SystemState::UserConfirmation || state == SystemState::Emergency || state == SystemState::Recovery) {
+  } else if (state == SystemState::UserConfirmation || state == SystemState::Emergency || state == SystemState::Sos || state == SystemState::Recovery) {
     updateStateMachine(now, data.sample, data.prediction);
   }
   updateDisplay(now, data);
+  postTelemetry(now, data);
   printFullStatus(now, data);
   delay(1);
 }

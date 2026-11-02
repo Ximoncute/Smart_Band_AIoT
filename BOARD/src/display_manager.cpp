@@ -100,6 +100,14 @@ void DisplayManager::showGpsStatus(const GpsData& gps) {
   if (available_) display.display();
 }
 
+void DisplayManager::showCustom(const char* line1, const char* line2, const char* line3) {
+  reset();
+  center(line1, 2, 1);
+  center(line2, 24, 2);
+  center(line3, 52, 1);
+  if (available_) display.display();
+}
+
 void DisplayManager::showCrashDetected(uint8_t secondsRemaining) {
   reset();
   center("CRASH DETECTED", 0, 1);
@@ -121,6 +129,13 @@ void DisplayManager::showEmergency() {
   reset();
   center("EMERGENCY", 10, 2);
   center("NO RESPONSE", 42, 1);
+  if (available_) display.display();
+}
+
+void DisplayManager::showSos() {
+  reset();
+  center("SOS", 10, 2);
+  center("BUTTON HELD", 42, 1);
   if (available_) display.display();
 }
 

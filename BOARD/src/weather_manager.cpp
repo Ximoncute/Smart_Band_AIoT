@@ -4,13 +4,20 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <Preferences.h>
 
 #include "config.h"
 
 void WeatherManager::begin() {
   WiFi.mode(WIFI_STA);
   WiFi.setTxPower(WIFI_POWER_8_5dBm);
-  WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD);
+  Preferences preferences;
+  // Open read/write so the namespace is created on a fresh device.
+  preferences.begin("smartband", false);
+  String ssid = preferences.isKey("ssid") ? preferences.getString("ssid", "") : "";
+  String password = preferences.isKey("password") ? preferences.getString("password", "") : "";
+  preferences.end();
+  if (ssid.length()) WiFi.begin(ssid.c_str(), password.c_str());
   configTime(7 * 3600, 0, "pool.ntp.org", "time.google.com");
 }
 
@@ -26,7 +33,12 @@ void WeatherManager::update(const GpsData& gps) {
   if (WiFi.status() != WL_CONNECTED) {
     data_.status = WeatherStatus::WaitWifi;
     WiFi.disconnect();
-    WiFi.begin(Config::WIFI_SSID, Config::WIFI_PASSWORD);
+    Preferences preferences;
+    preferences.begin("smartband", false);
+    String ssid = preferences.isKey("ssid") ? preferences.getString("ssid", "") : "";
+    String password = preferences.isKey("password") ? preferences.getString("password", "") : "";
+    preferences.end();
+    if (ssid.length()) WiFi.begin(ssid.c_str(), password.c_str());
     return;
   }
   data_.status = WeatherStatus::Fetching;

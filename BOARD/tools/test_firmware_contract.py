@@ -13,12 +13,15 @@ class FirmwareContractTest(unittest.TestCase):
         config = self.source("include/config.h")
         self.assertIn("GPS_TX = 1", config)
         self.assertIn("GPS_RX = 2", config)
-        self.assertIn('WIFI_SSID = "HieuCute"', config)
-        self.assertIn('WIFI_PASSWORD = "hieucute"', config)
+        self.assertNotIn('WIFI_PASSWORD =', config)
+        self.assertIn('BLE_WIFI_CHAR_UUID', config)
         self.assertIn("WIFI_POWER_8_5dBm", self.source("src/weather_manager.cpp"))
 
     def test_freertos_tasks_exist(self):
         main = self.source("src/main.cpp")
+        self.assertIn("<freertos/FreeRTOS.h>", main)
+        self.assertIn("<freertos/task.h>", main)
+        self.assertIn("<freertos/semphr.h>", main)
         self.assertIn("xTaskCreatePinnedToCore", main)
         self.assertIn("imuAiTask", main)
         self.assertIn("gpsTask", main)
@@ -54,8 +57,8 @@ class FirmwareContractTest(unittest.TestCase):
     def test_serial_and_oled_intervals(self):
         config = self.source("include/config.h")
         main = self.source("src/main.cpp")
-        self.assertIn("OLED_PAGE_MS = 3000", config)
-        self.assertIn("SERIAL_STATUS_MS = 2000", config)
+        self.assertIn("OLED_PAGE_MS = 6000", config)
+        self.assertIn("SERIAL_STATUS_MS = 3000", config)
         self.assertIn("printFullStatus", main)
         self.assertIn("if (datasetMode) return;", main)
 

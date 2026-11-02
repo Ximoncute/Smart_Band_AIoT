@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản trị Tận Tâm</title>
+<style>
+body{font:14px system-ui,sans-serif;max-width:1000px;margin:32px auto;padding:0 16px;color:#17212b;background:#f6f8fa}
+h1{font-size:22px}input,button{font:inherit;padding:8px;border:1px solid #cbd5df;border-radius:4px}button{cursor:pointer;background:#fff}button:hover{background:#e9f0f6}
+table{border-collapse:collapse;width:100%;background:#fff}th,td{padding:10px;border-bottom:1px solid #e2e8ef;text-align:left}th{background:#edf3f7}#message{min-height:24px;color:#b42318}.toolbar{display:flex;gap:8px;margin:20px 0}.toolbar input{flex:1}
+</style>
+<h1>Quản trị người dùng Tận Tâm</h1>
+<div class="toolbar"><input id="key" type="password" placeholder="Khóa quản trị trong backend/data/admin.key"><button onclick="loadUsers()">Tải danh sách</button></div>
+<p id="count"></p><p id="message"></p>
+<table><thead><tr><th>Email</th><th>Tên</th><th>Hồ sơ người đeo</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="rows"></tbody></table>
+<pre id="details" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+<script>
+const key=document.getElementById('key');
+const message=document.getElementById('message');
+async function call(path, options={}){
+  const response=await fetch(path,{...options,headers:{'Authorization':'Bearer '+key.value,'Content-Type':'application/json'}});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Yêu cầu thất bại');
+  return data;
+}
+async function loadUsers(){
+  try{
+    const data=await call('/api/v1/admin/users');
+    document.getElementById('count').textContent=`Tổng số tài khoản: ${data.count}`;
+    const rows=document.getElementById('rows');rows.replaceChildren();
+    for(const user of data.users){
+      const tr=document.createElement('tr');
+      for(const value of [user.email,user.name,user.profile?.name||'Chưa có',user.blocked?'Đã khóa':'Đang hoạt động']){
+        const td=document.createElement('td');td.textContent=value;tr.append(td);
+      }
+      const action=document.createElement('td');
+      const block=document.createElement('button');block.textContent=user.blocked?'Mở khóa':'Khóa';
+      block.onclick=()=>update(user.email,{blocked:!user.blocked});action.append(block);
+      const reset=document.createElement('button');reset.textContent='Đổi mật khẩu';
+      reset.onclick=()=>{const password=prompt('Mật khẩu mới (ít nhất 6 ký tự)');if(password)update(user.email,{password})};
+      action.append(reset);tr.append(action);rows.append(tr);
+      const detail=document.createElement('button');detail.textContent='Dữ liệu';
+      detail.onclick=async()=>{try{const data=await call('/api/v1/admin/user-data?email='+encodeURIComponent(user.email));
+        document.getElementById('details').textContent=JSON.stringify(data,null,2)}catch(error){message.textContent=error.message}};
+      action.append(detail);
+    }
+    message.textContent='';
+  }catch(error){message.textContent=error.message}
+}
+async function update(email,patch){
+  try{await call('/api/v1/admin/user',{method:'POST',body:JSON.stringify({email,...patch})});await loadUsers()}
+  catch(error){message.textContent=error.message}
+}
+</script>
