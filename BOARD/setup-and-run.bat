@@ -117,9 +117,10 @@ echo Checking connected Android device...
 set "APK=%PROJECT_ROOT%\program\android-app\app\build\outputs\apk\debug\app-debug.apk"
 adb devices
 echo Installing APK on the connected Android device. Check the phone for USB installation prompts...
-adb install -r "%APK%"
+call :install_apk
 if errorlevel 1 (
-  echo APK is ready at %APK%. Authorize USB debugging and rerun to install.
+  echo APK is ready at %APK%. Installation failed after three attempts.
+  echo If ADB reports no device, reconnect USB, unlock the phone and allow USB debugging.
 ) else (
   echo APK installed successfully. Opening Smartband...
   adb shell monkey -p com.smartband.iotcare 1 >nul
@@ -135,6 +136,19 @@ if not errorlevel 1 (
 )
 py -3.10 "%PROJECT_ROOT%\backend\server.py"
 exit /b %ERRORLEVEL%
+
+:install_apk
+for /l %%R in (1,1,3) do (
+  echo APK installation attempt %%R of 3...
+  adb install --no-streaming -r "%APK%"
+  if not errorlevel 1 exit /b 0
+  if not %%R==3 (
+    echo Waiting 5 seconds for the phone to reconnect...
+    timeout /t 5 /nobreak >nul
+    adb devices
+  )
+)
+exit /b 1
 
 :install
 where winget >nul 2>&1
