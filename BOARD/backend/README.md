@@ -35,7 +35,7 @@ và khóa quản trị. Thư mục MongoDB nằm ở `%LOCALAPPDATA%\SmartbandMo
 Firmware gửi HTTP/JSON qua Wi-Fi. App cấu hình Wi-Fi và địa chỉ backend cho
 kit qua BLE. Mỗi lần đổi mạng, nhập IP backend mới trong Hồ sơ rồi gửi lại.
 
-FormSubmit hiện được gọi từ app để chuyển OTP do backend tạo. Đây là cơ chế
+EmailJS hiện được gọi từ app để chuyển OTP do backend tạo. Đây là cơ chế
 demo: mã đi qua app nên chưa phù hợp để bảo vệ tài khoản triển khai công khai.
 Muốn triển khai thật, cấu hình dịch vụ email hoặc SMTP ở backend để mã OTP
 không bao giờ đi qua client.

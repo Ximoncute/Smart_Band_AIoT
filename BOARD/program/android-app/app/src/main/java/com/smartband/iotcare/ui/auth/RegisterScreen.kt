@@ -27,10 +27,56 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import org.json.JSONObject
 import kotlin.random.Random
 
+private const val EMAILJS_PUBLIC_KEY = "xm9UhmwYORUwVFhvM"
+private const val EMAILJS_SERVICE_ID = "service_073uc4m"
+private const val EMAILJS_TEMPLATE_ID = "template_8c6g64f"
+
+private data class OtpSendResult(val success: Boolean, val message: String)
+
+private fun sendOtpWithEmailJs(email: String, code: String, name: String): OtpSendResult {
+    val payload = JSONObject().apply {
+        put("service_id", EMAILJS_SERVICE_ID)
+        put("template_id", EMAILJS_TEMPLATE_ID)
+        put("user_id", EMAILJS_PUBLIC_KEY)
+        put("template_params", JSONObject().apply {
+            put("to_email", email)
+            put("name", name.ifBlank { "Quý khách" })
+            put("otp", code)
+            put("purpose", "Xác nhận đăng ký tài khoản Tận Tâm")
+            put("time", "5 phút")
+        })
+    }.toString()
+
+    val connection = (URL("https://api.emailjs.com/api/v1.0/email/send").openConnection() as HttpURLConnection)
+    return try {
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.connectTimeout = 8_000
+        connection.readTimeout = 8_000
+        connection.setRequestProperty("Accept", "application/json")
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
+
+        val responseCode = connection.responseCode
+        val responseText = (if (responseCode in 200..299) connection.inputStream else connection.errorStream)
+            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (responseCode in 200..299) {
+            OtpSendResult(true, "Đã gửi OTP. Kiểm tra Gmail của bạn.")
+        } else {
+            OtpSendResult(false, "EmailJS lỗi ($responseCode). ${responseText.take(160)}")
+        }
+    } catch (error: Exception) {
+        OtpSendResult(false, when (error) {
+            is java.net.SocketTimeoutException -> "EmailJS phản hồi quá lâu. Kiểm tra mạng rồi thử lại."
+            else -> "Không gửi được OTP: ${error.message ?: "lỗi kết nối"}"
+        })
+    } finally {
+        connection.disconnect()
+    }
+}
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: (String) -> Unit,
@@ -53,43 +99,15 @@ fun RegisterScreen(
             return
         }
         val code = Random.nextInt(100000, 1000000).toString()
-        generatedOtp = code
         sendingOtp = true
         status = "Đang gửi mã OTP..."
         scope.launch {
-            val sent = withContext(Dispatchers.IO) {
-                runCatching {
-                    // Demo only: FormSubmit may ask the recipient to activate the form.
-                    // FormSubmit expects the recipient email unescaped in the URL path.
-                    val endpoint = "https://formsubmit.co/ajax/${URLEncoder.encode(targetEmail, "UTF-8")}"
-                    val body = JSONObject().apply {
-                        put("_subject", "[Smartband Care] OTP đăng ký tài khoản")
-                        put("_captcha", "false")
-                        put("_template", "table")
-                        put("Người nhận", targetEmail)
-                        put("Mã OTP", code)
-                        put("Hiệu lực", "5 phút")
-                    }.toString()
-                    val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
-                        requestMethod = "POST"
-                        doOutput = true
-                        connectTimeout = 15000
-                        readTimeout = 15000
-                        setRequestProperty("User-Agent", "SmartbandCare-Demo/1.0")
-                        setRequestProperty("Accept", "application/json")
-                        setRequestProperty("Content-Type", "application/json")
-                    }
-                    connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-                    val responseCode = connection.responseCode
-                    val responseText = runCatching {
-                        (if (responseCode in 200..299) connection.inputStream else connection.errorStream)
-                            ?.bufferedReader()?.use { it.readText() }.orEmpty()
-                    }.getOrDefault("")
-                    responseCode in 200..299 && !responseText.contains("error", ignoreCase = true)
-                }.getOrDefault(false)
+            val result = withContext(Dispatchers.IO) {
+                sendOtpWithEmailJs(targetEmail, code, name.trim())
             }
+            if (result.success) generatedOtp = code
             sendingOtp = false
-            status = if (sent) "Đã gửi OTP. Kiểm tra Gmail của bạn." else "Không gửi được OTP. Kiểm tra mạng hoặc kích hoạt FormSubmit."
+            status = result.message
         }
     }
 

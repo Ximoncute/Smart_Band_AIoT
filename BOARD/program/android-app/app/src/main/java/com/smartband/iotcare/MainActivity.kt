@@ -12,6 +12,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -37,6 +38,10 @@ class MainActivity : ComponentActivity() {
     private val settings by lazy { getSharedPreferences("smartband_state", MODE_PRIVATE) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        androidx.core.content.ContextCompat.startForegroundService(this, Intent(this, EmergencyAlertService::class.java))
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 701)
+        }
         val webView = WebView(this)
         this.webView = webView
         webView.settings.javaScriptEnabled = true
@@ -69,7 +74,7 @@ class MainActivity : ComponentActivity() {
     inner class BleProvisionBridge {
         @JavascriptInterface
         fun saveState(value: String) {
-            settings.edit().putString("state", value).apply()
+            settings.edit().putString("state", value).commit()
         }
 
         @JavascriptInterface
@@ -92,11 +97,19 @@ class MainActivity : ComponentActivity() {
 
         @JavascriptInterface
         fun stopEmergencyAlarm() {
+            startService(Intent(this@MainActivity, EmergencyAlertService::class.java).setAction(EmergencyAlertService.ACTION_STOP_ALARM))
             runOnUiThread {
                 alertPlayer?.stop()
                 alertPlayer?.release()
                 alertPlayer = null
             }
+        }
+
+        @JavascriptInterface
+        fun setBackendUrl(url: String) {
+            startService(Intent(this@MainActivity, EmergencyAlertService::class.java)
+                .setAction(EmergencyAlertService.ACTION_UPDATE_BACKEND)
+                .putExtra(EmergencyAlertService.EXTRA_BACKEND_URL, url))
         }
 
         @JavascriptInterface

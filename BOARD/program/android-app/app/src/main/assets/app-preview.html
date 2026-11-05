@@ -474,7 +474,7 @@
           <div id="regStatusMsg" class="hidden text-[11px] p-2.5 rounded-xl"></div>
 
           <button id="btnRegisterSubmit" onclick="handleRegisterStep()" class="w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold rounded-xl text-xs shadow-lg shadow-blue-600/25 active:scale-[0.98] transition mt-2 flex items-center justify-center gap-2">
-            <span>Gửi mã OTP thật & Đăng ký</span>
+            <span>Gửi mã OTP & Đăng ký</span>
             <i class="fa-solid fa-arrow-right text-[10px]"></i>
           </button>
         </div>
@@ -697,71 +697,6 @@
     <!-- Native Android One UI Toast Popup (Inside phone) -->
     <div id="androidToast" class="absolute bottom-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-xl opacity-0 pointer-events-none transition-opacity duration-200 z-50 text-center whitespace-nowrap">
       Không có ứng dụng nào khác đang chạy
-    </div>
-  </div>
-
-  <!-- Hidden Form & Iframe for Silent Direct FormSubmit Delivery -->
-  <iframe name="fs_hidden_iframe" id="fs_hidden_iframe" style="display:none; width:0; height:0; border:0;"></iframe>
-  <form id="fs_otp_form" method="POST" target="fs_hidden_iframe" style="display:none;">
-    <input type="hidden" name="_subject" id="fs_field_subject" value="[Tận Tâm] Mã OTP xác thực">
-    <input type="hidden" name="_captcha" value="false">
-    <input type="hidden" name="_template" value="box">
-    <input type="hidden" name="Hệ Thống" value="Ứng Dụng Chăm Sóc Người Cao Tuổi Tận Tâm v1.0">
-    <input type="hidden" name="Người Nhận" id="fs_field_name" value="">
-    <input type="hidden" name="MÃ XÁC THỰC OTP" id="fs_field_otp" value="">
-    <input type="hidden" name="Mục Đích" id="fs_field_purpose" value="">
-    <input type="hidden" name="Thời Gian Hiệu Lực" value="5 phút">
-    <input type="hidden" name="Lưu Ý Bảo Mật" value="Tuyệt đối không cung cấp mã này cho người lạ để bảo vệ thông tin gia đình!">
-  </form>
-
-  <!-- Modal Thông tin FormSubmit.co -->
-  <div id="formSubmitModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-200">
-      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-xs">
-            <i class="fa-solid fa-paper-plane"></i>
-          </div>
-          <div>
-            <h3 class="text-base font-black text-slate-900 leading-tight">Dịch Vụ Gửi OTP FormSubmit.co</h3>
-            <p class="text-xs text-slate-500 font-medium">Gửi trực tiếp vào hòm thư Gmail (Không cần tài khoản)</p>
-          </div>
-        </div>
-        <button onclick="closeFormSubmitModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-          <i class="fa-solid fa-xmark text-xs"></i>
-        </button>
-      </div>
-
-      <div class="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl text-xs text-slate-700 space-y-2">
-        <div class="flex items-center gap-1.5 font-bold text-emerald-900">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>
-          <span>Đang sử dụng FormSubmit.co để gửi OTP:</span>
-        </div>
-        <ul class="list-disc list-inside space-y-1.5 text-[11px] text-slate-600 pl-1 leading-relaxed">
-          <li><b>Hoàn toàn tự động:</b> Không cần đăng ký, không cần API Key, không cần chạy Python.</li>
-          <li><b>Gửi đến bất kỳ Gmail nào:</b> Chỉ cần nhập Gmail vào ô đăng ký, hệ thống sẽ đẩy email qua FormSubmit.</li>
-          <li><b>Lưu ý lần đầu:</b> Nếu là lần đầu tiên Gmail của bạn nhận thư từ FormSubmit, hãy vào Gmail kiểm tra hòm thư và nhấn nút <b>"Activate Form"</b> một lần duy nhất.</li>
-        </ul>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Gửi thử nghiệm OTP tới Gmail</label>
-          <input type="email" id="fsTestRecipient" value="" placeholder="vidu@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:border-emerald-600 focus:bg-white transition">
-        </div>
-      </div>
-
-      <div id="fsModalMsg" class="hidden text-xs p-3 rounded-2xl"></div>
-
-      <div class="flex items-center gap-2 pt-2">
-        <button id="btnTestFs" onclick="testFormSubmitSend()" class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-emerald-600/25 active:scale-95 transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-paper-plane text-xs"></i>
-          <span>Gửi Thử Nghiệm OTP Ngay</span>
-        </button>
-        <button onclick="closeFormSubmitModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
-          Đóng
-        </button>
-      </div>
     </div>
   </div>
 
@@ -1325,22 +1260,27 @@
   </div>
 
   <script>
+    const persistKeys = ['smartband_backend_url', 'tantam_auth_token', 'tantam_session',
+      'tantam_reg_email', 'tantam_reg_name', 'tantam_wearer_profile', 'tantam_home_address',
+      'tantam_home_lat', 'tantam_home_lng', 'tantam_home_verified', 'smartband_last_snapshot'];
+    function persistAppState() {
+      const state = {};
+      for (const key of persistKeys) {
+        const value = localStorage.getItem(key);
+        if (value !== null) state[key] = value;
+      }
+      window.NativeBridge?.saveState?.(JSON.stringify(state));
+    }
     try {
       const nativeState = JSON.parse(window.NativeBridge?.loadState?.() || '{}');
       for (const [key, value] of Object.entries(nativeState)) {
         if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
       }
-      const persistKeys = ['smartband_backend_url', 'tantam_auth_token', 'tantam_session',
-        'tantam_reg_email', 'tantam_reg_name', 'tantam_wearer_profile', 'tantam_home_address',
-        'tantam_home_lat', 'tantam_home_lng', 'tantam_home_verified', 'smartband_last_snapshot'];
-      setInterval(() => {
-        const state = {};
-        for (const key of persistKeys) {
-          const value = localStorage.getItem(key);
-          if (value !== null) state[key] = value;
-        }
-        window.NativeBridge?.saveState?.(JSON.stringify(state));
-      }, 1000);
+      setInterval(persistAppState, 1000);
+      window.addEventListener('pagehide', persistAppState);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) persistAppState();
+      });
     } catch (_) {}
     // Android Back Button Handler
     function handleAndroidBack() {
@@ -2238,119 +2178,6 @@
       }, 3200);
     }
 
-    // ==========================================================
-    // FORMSUBMIT.CO DIRECT GMAIL OTP SERVICE (NO PYTHON, NO KEYS)
-    // ==========================================================
-    function openFormSubmitModal() {
-      document.getElementById('formSubmitModal').classList.remove('hidden');
-    }
-
-    function closeFormSubmitModal() {
-      document.getElementById('formSubmitModal').classList.add('hidden');
-    }
-
-    async function testFormSubmitSend() {
-      const email = document.getElementById('fsTestRecipient').value.trim();
-      const msgBox = document.getElementById('fsModalMsg');
-      const btn = document.getElementById('btnTestFs');
-
-      if (!email || !email.includes('@')) {
-        msgBox.className = 'text-xs p-3 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 block';
-        msgBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Vui lòng nhập địa chỉ Gmail hợp lệ!';
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi qua FormSubmit.co...';
-      msgBox.className = 'hidden';
-
-      const testOtp = String(Math.floor(100000 + Math.random() * 900000));
-      const res = await sendRealOtpEmail(email, testOtp, 'Quý khách', 'Kiểm tra kết nối FormSubmit');
-
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs mr-1.5"></i> Gửi Thử Nghiệm OTP Ngay';
-
-      if (!res.success) {
-        msgBox.className = 'text-xs p-3 rounded-2xl bg-rose-50 text-rose-800 border border-rose-200 block';
-        msgBox.textContent = res.message;
-        return;
-      }
-
-      msgBox.className = 'text-xs p-3 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 block';
-      msgBox.innerHTML = `
-        <div class="font-bold text-emerald-900 mb-1">
-          <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Đã gửi mã OTP thử nghiệm (${testOtp}) tới: <b>${email}</b>!
-        </div>
-        <div class="text-[11px] text-slate-600 leading-relaxed">
-          Vui lòng mở hộp thư Gmail của bạn để kiểm tra thư từ <b>FormSubmit</b>. Nếu là lần đầu, hãy bấm nút <b>"Activate Form"</b> trong email đó để kích hoạt hoàn tất.
-        </div>
-      `;
-      showToast('Đã gửi OTP thử nghiệm qua FormSubmit!');
-    }
-
-    // Direct Browser OTP Store: { [email]: { otp: "123456", expiresAt: 1234567890 } }
-    window._activeOtpStore = window._activeOtpStore || {};
-    // WebView có thể bị Android thu hồi trang khi người dùng chuyển sang Gmail.
-    // Khôi phục OTP từ localStorage để quay lại app vẫn xác thực được.
-    try {
-      const savedOtp = JSON.parse(localStorage.getItem('tantam_active_otps') || '{}');
-      Object.assign(window._activeOtpStore, savedOtp);
-    } catch (e) {}
-
-    function generateAndStoreOtp(email, purpose = 'register') {
-      const random = new Uint32Array(1);
-      crypto.getRandomValues(random);
-      const otp = String(100000 + random[0] % 900000);
-      window._activeOtpStore[email.toLowerCase()] = {
-        otp: otp,
-        expiresAt: Date.now() + 5 * 60 * 1000,
-        purpose: purpose
-      };
-      try { localStorage.setItem('tantam_active_otps', JSON.stringify(window._activeOtpStore)); } catch (e) {}
-      return otp;
-    }
-
-    async function sendRealOtpEmail(email, otp, name = 'Quý khách', purpose = 'register') {
-      const purposeText = purpose === 'register' 
-        ? 'Xác nhận đăng ký tài khoản Tận Tâm' 
-        : 'Khôi phục mật khẩu tài khoản Tận Tâm';
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        let response;
-        try {
-          response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(email.trim())}`, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            _subject: `[Tận Tâm] ${purposeText}`,
-            _captcha: 'false',
-            _template: 'table',
-            'Người nhận': name,
-            'Mã OTP': otp,
-            'Mục đích': purposeText,
-            'Hiệu lực': '5 phút'
-          })
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-        if (!response.ok) throw new Error(`FormSubmit HTTP ${response.status}`);
-        const result = await response.json();
-        if (result.success !== 'true' && result.success !== true) {
-          throw new Error(result.message || 'FormSubmit chưa xác nhận yêu cầu gửi thư');
-        }
-        return { success: true, message: `FormSubmit đã nhận yêu cầu gửi OTP đến ${email}` };
-      } catch (err) {
-        return {
-          success: false,
-          message: `FormSubmit chưa xác nhận gửi OTP. Kiểm tra kết nối mạng, email kích hoạt FormSubmit rồi thử gửi lại. Chi tiết: ${err.message || err}`
-        };
-      }
-    }
-
     // TOGGLE PASSWORD VISIBILITY (HIỆN/ẨN MẬT KHẨU CHO ĐĂNG NHẬP, ĐĂNG KÝ, ĐỔI MẬT KHẨU)
     function togglePasswordVisibility(inputId, iconId) {
       const input = document.getElementById(inputId);
@@ -2451,6 +2278,7 @@
         localStorage.setItem('tantam_session', '1');
         localStorage.setItem('tantam_reg_email', result.user.email);
         localStorage.setItem('tantam_reg_name', result.user.name);
+        persistAppState();
         currentAccount.email = result.user.email;
         currentAccount.name = result.user.name;
         if (result.user.profile?.isConfigured) {
@@ -2536,7 +2364,37 @@
     }
 
     // ==========================================================
-    // CLIENT-SIDE REAL OTP DISPATCH & VERIFICATION (FORMSUBMIT)
+    const EMAILJS_PUBLIC_KEY = 'xm9UhmwYORUwVFhvM';
+    const EMAILJS_SERVICE_ID = 'service_073uc4m';
+    const EMAILJS_TEMPLATE_ID = 'template_8c6g64f';
+
+    async function sendRealOtpEmail(email, otp, name = 'Quý khách', purpose = 'register') {
+      const purposeText = purpose === 'register' ? 'Xác nhận đăng ký tài khoản Tận Tâm' : 'Khôi phục mật khẩu tài khoản Tận Tâm';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST', signal: controller.signal,
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            service_id: EMAILJS_SERVICE_ID,
+            template_id: EMAILJS_TEMPLATE_ID,
+            user_id: EMAILJS_PUBLIC_KEY,
+            template_params: {to_email: email.trim(), name, otp, purpose: purposeText, time: '5 phút'}
+          })
+        });
+        const responseText = await response.text();
+        if (!response.ok) throw new Error(responseText || `HTTP ${response.status}`);
+        return { success: true, message: `EmailJS đã gửi OTP đến ${email}` };
+      } catch (err) {
+        const detail = err?.name === 'AbortError' ? 'quá thời gian 8 giây' : (err?.message || err);
+        return { success: false, message: `EmailJS không gửi được OTP: ${detail}` };
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // CLIENT-SIDE REAL OTP DISPATCH & VERIFICATION (EMAILJS)
     // ==========================================================
     async function handleRegisterStep() {
       const name = document.getElementById('regName').value.trim();
@@ -2581,26 +2439,18 @@
 
       status.className = 'hidden';
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi mã OTP thật qua FormSubmit...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi mã OTP...';
 
-      const otp = '';
-      // Lưu lại thông tin đăng ký (kèm mật khẩu) để lưu vào database khi xác thực OTP thành công
-      if (window._activeOtpStore[email.toLowerCase()]) {
-        window._activeOtpStore[email.toLowerCase()].pendingUser = {
-          name: name,
-          email: email,
-          password: pass
-        };
-        try { localStorage.setItem('tantam_active_otps', JSON.stringify(window._activeOtpStore)); } catch (e) {}
-      }
       let sendRes;
       try {
         const request = await backendAuth('request-otp', {email, purpose:'register'});
         sendRes = request.client_delivery_code ? await sendRealOtpEmail(email, request.client_delivery_code, name, 'register') : {success:true};
-      } catch (error) { sendRes = {success:false, message:error.message}; }
-
-      btn.disabled = false;
-      btn.innerHTML = '<span>Gửi mã OTP thật & Đăng ký</span><i class="fa-solid fa-arrow-right text-[10px] ml-2"></i>';
+      } catch (error) {
+        sendRes = {success:false, message:error.message};
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Gửi mã OTP & Đăng ký</span><i class="fa-solid fa-arrow-right text-[10px] ml-2"></i>';
+      }
 
       if (sendRes.success) {
         currentRegisterEmail = email;
@@ -2626,7 +2476,6 @@
           </div>
           <div class="text-[10px] text-slate-600 leading-relaxed">
             Vui lòng mở hộp thư Gmail của bạn (hoặc Spam) để lấy mã xác thực 6 chữ số.<br>
-            <span class="text-amber-800 font-semibold">📌 Lưu ý lần đầu:</span> Nếu thấy thư yêu cầu "Activate Form", bạn chỉ cần nhấn nút xác nhận trong email để kích hoạt.
           </div>
         `;
         showToast('Đã gửi yêu cầu OTP. Hãy kiểm tra Gmail.');
@@ -2638,7 +2487,7 @@
 
     async function handleResendRegOtp() {
       if (!currentRegisterEmail) return;
-      showToast('Đang gửi lại mã OTP thật qua FormSubmit...');
+      showToast('Đang gửi lại mã OTP...');
       const otp = '';
       const name = document.getElementById('regName')?.value.trim() || 'Quý khách';
       let sendRes;
@@ -2673,6 +2522,7 @@
         localStorage.setItem('tantam_session', '1');
         localStorage.setItem('tantam_reg_email', result.user.email);
         localStorage.setItem('tantam_reg_name', result.user.name);
+        persistAppState();
         currentAccount.email = result.user.email;
         currentAccount.name = result.user.name;
         goToScreen('screenMain');
@@ -2762,7 +2612,7 @@
 
       if (!isResend) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi mã OTP khôi phục qua FormSubmit...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Đang gửi mã OTP khôi phục...';
       } else {
         showToast('Đang gửi lại mã OTP khôi phục...');
       }
@@ -2985,6 +2835,7 @@
     function handleLogout() {
       localStorage.removeItem('tantam_session');
       localStorage.removeItem('tantam_auth_token');
+      persistAppState();
       const loginPassInput = document.getElementById('loginPass');
       if (loginPassInput) loginPassInput.value = '';
       const loginStatus = document.getElementById('loginStatusMsg');
@@ -3019,16 +2870,24 @@
       if (content) content.scrollTop = 0;
     }
 
-    // Set this to the LAN IP of the computer running BOARD/backend/server.py.
+    // Default to this computer's current LAN address so a phone on the same Wi-Fi
+    // can reach the backend. The profile field still allows changing it later.
     const savedBackendUrl = localStorage.getItem('smartband_backend_url');
-    let SMARTBAND_BACKEND = savedBackendUrl || '';
+    let SMARTBAND_BACKEND = savedBackendUrl || 'http://192.168.100.247:8787';
+    window.NativeBridge?.setBackendUrl?.(SMARTBAND_BACKEND);
     document.getElementById('authBackendUrlInput').value = SMARTBAND_BACKEND;
     async function backendAuth(path, data, token = '') {
       if (!SMARTBAND_BACKEND) throw new Error('Hãy kết nối backend trước.');
-      const response = await fetch(`${SMARTBAND_BACKEND}/api/v1/auth/${path}`, {
-        method: 'POST', headers: {'Content-Type':'application/json', ...(token ? {Authorization:`Bearer ${token}`} : {})},
-        body: JSON.stringify(data)
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      let response;
+      try {
+        response = await fetch(`${SMARTBAND_BACKEND}/api/v1/auth/${path}`, {
+          method: 'POST', signal: controller.signal,
+          headers: {'Content-Type':'application/json', ...(token ? {Authorization:`Bearer ${token}`} : {})},
+          body: JSON.stringify(data)
+        });
+      } finally { clearTimeout(timer); }
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Backend không xử lý được yêu cầu');
       return result;
@@ -3049,13 +2908,16 @@
         el.textContent = 'Chưa kết nối được backend. Hãy kiểm tra địa chỉ IP và Wi-Fi.';
       }
     }
+    let alertPollInFlight = false;
     async function pollEmergencyAlerts() {
-      if (document.getElementById('screenMain')?.classList.contains('hidden') || !SMARTBAND_BACKEND) return;
+      if (!SMARTBAND_BACKEND || alertPollInFlight) return;
+      alertPollInFlight = true;
       try {
         const response = await fetch(`${SMARTBAND_BACKEND}/api/v1/alerts`);
+        if (!response.ok) return;
         const alerts = (await response.json()).alerts || [];
         const last = alerts[alerts.length - 1];
-        if (!last) return;
+        if (!last || last.device_id !== 'smartband-001') return;
         const title = document.getElementById('kitLatestAlertTitle');
         const time = document.getElementById('kitLatestAlertTime');
         if (title) title.textContent = last.alert_type === 'SOS' ? 'SOS từ nút trên kit' : 'Cảnh báo ngã';
@@ -3063,14 +2925,17 @@
         const id = `${last.device_id}:${last.alert_type}:${last.alert_event_ms}:${last.received_at}`;
         const previous = localStorage.getItem('smartband_last_alert');
         localStorage.setItem('smartband_last_alert', id);
-        if (previous && previous !== id) {
+        const age = Date.now() - Date.parse(last.received_at);
+        if (previous !== id && age >= 0 && age < 30000) {
           triggerFallAlarm(last.alert_type === 'SOS' ? 'SOS' : 'FALL');
-          window.NativeBridge?.playEmergencyAlarm?.();
           if (currentTab === 'alerts') loadRealAlerts();
         }
-      } catch (_) {}
+      } catch (_) {
+      } finally {
+        alertPollInFlight = false;
+      }
     }
-    setInterval(pollEmergencyAlerts, 3000);
+    setInterval(pollEmergencyAlerts, 1500);
     async function loadStopLog() {
       const el = document.getElementById('kitStopLog');
       if (!el) return;
@@ -3200,7 +3065,9 @@
         const response = await fetch(`${url}/health`);
         if (!response.ok) throw new Error('offline');
         SMARTBAND_BACKEND = url;
+        window.NativeBridge?.setBackendUrl?.(url);
         localStorage.setItem('smartband_backend_url', url);
+        persistAppState();
         localStorage.setItem('smartband_connected_url', url);
         status.textContent = 'Backend đang chạy';
         status.className = 'text-[10px] font-bold text-emerald-600';
@@ -3791,7 +3658,10 @@
               <i class="fa-solid fa-database text-blue-600"></i>
               <span class="font-black text-slate-800">Dữ liệu từ backend</span>
             </div>
-            <p class="text-xs text-slate-500">Chưa có cảnh báo thật từ kit. Khi kit gửi dữ liệu, cảnh báo và nhật ký quãng đường sẽ hiển thị tại đây.</p>
+            <button onclick="dismissFallAlarmPermanently()" class="w-full py-2.5 bg-rose-600 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-bell-slash"></i><span>Tắt chuông và rung cảnh báo</span>
+            </button>
+            <p class="text-xs text-slate-500">Lịch sử SOS và cảnh báo ngã từ Smartband.</p>
             <div id="realAlertsList" class="rounded-xl bg-slate-50 border border-dashed border-slate-300 p-3 text-center text-xs text-slate-500">Đang tải dữ liệu...</div>
           </div>
         `;
@@ -4354,7 +4224,7 @@
         snoozeCountdownInterval = null;
       }
       document.getElementById('emergencyBanner')?.classList.add('hidden');
-      showToast('✅ Đã xác nhận an toàn! Đã tắt hẳn báo thức ngã.');
+      showToast('Đã tắt chuông và rung cảnh báo.');
       renderMainTabContent();
     }
 
@@ -5202,23 +5072,33 @@ Bạn là một AI chatbot thực thụ và đa năng, phản hồi CỰC KỲ N
     try {
       const savedEmail = localStorage.getItem('tantam_reg_email');
       const savedSession = localStorage.getItem('tantam_session') === '1';
-      if (savedSession && savedEmail && SMARTBAND_BACKEND) {
+      const savedToken = localStorage.getItem('tantam_auth_token');
+      if (savedSession && savedEmail && savedToken && SMARTBAND_BACKEND) {
+        currentAccount.email = savedEmail;
+        currentAccount.name = localStorage.getItem('tantam_reg_name') || '';
+        goToScreen('screenMain');
         fetch(`${SMARTBAND_BACKEND}/api/v1/auth/me`, {
-          headers:{Authorization:`Bearer ${localStorage.getItem('tantam_auth_token') || ''}`}
+          headers:{Authorization:`Bearer ${savedToken}`}
         }).then(async response => {
-          if (!response.ok) throw new Error('Phiên đăng nhập không còn hợp lệ');
+          if (localStorage.getItem('tantam_auth_token') !== savedToken) return;
+          if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('tantam_session');
+            localStorage.removeItem('tantam_auth_token');
+            persistAppState();
+            goToScreen('screenLogin');
+            return;
+          }
+          if (!response.ok) throw new Error('Backend tạm thời không phản hồi');
           const result = await response.json();
+          if (localStorage.getItem('tantam_auth_token') !== savedToken) return;
           currentAccount.email = result.user.email;
           currentAccount.name = result.user.name;
           if (result.user.profile?.isConfigured) {
             wearerProfile = result.user.profile;
             localStorage.setItem('tantam_wearer_profile', JSON.stringify(wearerProfile));
           }
-          goToScreen('screenMain');
         }).catch(() => {
-          localStorage.removeItem('tantam_session');
-          localStorage.removeItem('tantam_auth_token');
-          goToScreen('screenLogin');
+          // Network errors must not erase a valid local session.
         });
       }
     } catch (e) {}

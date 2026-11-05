@@ -189,6 +189,7 @@ void enterState(SystemState next) {
   }
   if (state == SystemState::Emergency || state == SystemState::Sos) {
     alertEventMs = millis();
+    lastTelemetryMs = millis() - Config::TELEMETRY_INTERVAL_MS;
     buzzerManager.setMode(BuzzerMode::Emergency);
     if (state == SystemState::Sos) displayManager.showSos();
     else displayManager.showEmergency();

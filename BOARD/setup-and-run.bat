@@ -54,12 +54,18 @@ if not exist "%ANDROID_HOME%\cmdline-tools\latest\bin\sdkmanager.bat" (
   powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $sdk=$env:ANDROID_HOME; $zip=Join-Path $env:TEMP 'smartband-android-tools.zip'; $tmp=Join-Path $env:TEMP 'smartband-android-tools'; Invoke-WebRequest 'https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip' -OutFile $zip; if(Test-Path $tmp){Remove-Item $tmp -Recurse -Force}; Expand-Archive $zip $tmp; New-Item -ItemType Directory (Join-Path $sdk 'cmdline-tools') -Force | Out-Null; Move-Item (Join-Path $tmp 'cmdline-tools') (Join-Path $sdk 'cmdline-tools\latest'); Remove-Item $zip -Force; Remove-Item $tmp -Recurse -Force"
   if errorlevel 1 exit /b 1
 )
+if not exist "%ANDROID_HOME%\platform-tools\adb.exe" goto :install_android_packages
+if not exist "%ANDROID_HOME%\platforms\android-35" goto :install_android_packages
+if not exist "%ANDROID_HOME%\build-tools\35.0.0" goto :install_android_packages
+goto :android_ready
+:install_android_packages
 echo Installing Android SDK packages...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "1..30 | ForEach-Object {'y'} | & '%ANDROID_HOME%\cmdline-tools\latest\bin\sdkmanager.bat' --sdk_root='%ANDROID_HOME%' 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'; exit $LASTEXITCODE"
 if errorlevel 1 exit /b 1
+:android_ready
 set "PATH=%ANDROID_HOME%\platform-tools;%PATH%"
 
-echo Installing backend Python dependencies...
+echo Installing backend Python dependencies (including pymongo)...
 py -3.10 -m pip install -r "%PROJECT_ROOT%\backend\requirements.txt"
 if errorlevel 1 exit /b 1
 py -3.10 -m pip install platformio
@@ -72,6 +78,25 @@ if errorlevel 1 (
   exit /b 1
 )
 
+set "ESP_PORT="
+set "ESP_PORT_COUNT=0"
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PROJECT_ROOT%\tools\find_esp_port.ps1"') do (
+  set "ESP_PORT=%%P"
+  set /a ESP_PORT_COUNT+=1
+)
+if "%ESP_PORT_COUNT%"=="1" (
+  echo ESP32 detected on %ESP_PORT%. Uploading firmware...
+  py -3.10 -m platformio run -d "%PROJECT_ROOT%" -t upload --upload-port "%ESP_PORT%"
+  if errorlevel 1 (
+    echo ESP32 upload failed on %ESP_PORT%. Check USB cable and boot mode.
+    exit /b 1
+  )
+) else if "%ESP_PORT_COUNT%"=="0" (
+  echo No ESP32 serial port detected. Firmware is built; connect the board and rerun to upload.
+) else (
+  echo Multiple ESP32 serial ports detected. Skipping upload to avoid flashing the wrong board.
+)
+
 echo Starting MongoDB...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$dir=Join-Path $env:LOCALAPPDATA 'SmartbandMongo'; New-Item -ItemType Directory $dir -Force | Out-Null; if(-not (Test-NetConnection 127.0.0.1 -Port 27017 -InformationLevel Quiet -WarningAction SilentlyContinue)){Start-Process -FilePath $env:MONGO_EXE -ArgumentList @('--dbpath',$dir,'--bind_ip','127.0.0.1','--port','27017') -WindowStyle Hidden; Start-Sleep -Seconds 3}; if(-not (Test-NetConnection 127.0.0.1 -Port 27017 -InformationLevel Quiet -WarningAction SilentlyContinue)){exit 1}"
 if errorlevel 1 (
@@ -79,7 +104,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Building Android APK...
+echo Building Android APK (EmailJS OTP)...
 pushd "%PROJECT_ROOT%\program\android-app"
 call gradlew.bat :app:assembleDebug
 if errorlevel 1 (
