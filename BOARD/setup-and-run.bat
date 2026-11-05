@@ -116,10 +116,12 @@ popd
 echo Checking connected Android device...
 set "APK=%PROJECT_ROOT%\program\android-app\app\build\outputs\apk\debug\app-debug.apk"
 adb devices
+echo Installing APK on the connected Android device. Check the phone for USB installation prompts...
 adb install -r "%APK%"
 if errorlevel 1 (
   echo APK is ready at %APK%. Authorize USB debugging and rerun to install.
 ) else (
+  echo APK installed successfully. Opening Smartband...
   adb shell monkey -p com.smartband.iotcare 1 >nul
 )
 
